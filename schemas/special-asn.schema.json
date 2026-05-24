@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bogonforge.local/schemas/special-asn.schema.json",
+  "type": "object",
+  "required": ["asn_range", "class", "reason", "facts", "dataset_policy"],
+  "properties": {
+    "asn_range": { "type": "string" },
+    "class": { "type": "string" },
+    "reason": { "type": "string" },
+    "facts": {
+      "type": "object",
+      "required": ["source", "rfc", "stability"],
+      "properties": {
+        "source": { "type": "string" },
+        "rfc": { "type": "array", "items": { "type": "string" } },
+        "stability": { "enum": ["permanent"] }
+      }
+    },
+    "dataset_policy": { "type": "array", "items": { "type": "string" } }
+  }
+}

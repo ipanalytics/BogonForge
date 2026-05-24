@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bogonforge.local/schemas/policy-profile.schema.json",
+  "type": "object",
+  "required": ["profile", "records"],
+  "properties": {
+    "profile": { "type": "string" },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subject", "policy"],
+        "properties": {
+          "subject": { "type": "string" },
+          "policy": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

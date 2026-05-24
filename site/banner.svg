@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
+  <title id="title">BogonForge</title>
+  <desc id="desc">A network policy compiler banner with registry, compiler, and artifact lanes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="0.55" stop-color="#132033"/>
+      <stop offset="1" stop-color="#0e2b2a"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4fd1c5"/>
+      <stop offset="1" stop-color="#93c5fd"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="420" fill="url(#bg)"/>
+  <g opacity="0.16" stroke="#e5e7eb" stroke-width="1">
+    <path d="M0 70h1600M0 140h1600M0 210h1600M0 280h1600M0 350h1600"/>
+    <path d="M120 0v420M260 0v420M400 0v420M540 0v420M680 0v420M820 0v420M960 0v420M1100 0v420M1240 0v420M1380 0v420M1520 0v420"/>
+  </g>
+  <g transform="translate(126 90)">
+    <text x="0" y="0" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="72" font-weight="750" letter-spacing="0">BogonForge</text>
+    <text x="4" y="58" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="26" letter-spacing="0">IANA/RFC special-use IP and ASN policy compiler</text>
+  </g>
+  <g transform="translate(132 230)" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="20">
+    <rect x="0" y="0" width="315" height="96" rx="8" fill="#111827" stroke="#334155"/>
+    <text x="26" y="38" fill="#f8fafc">IANA / RFC facts</text>
+    <text x="26" y="68" fill="#94a3b8">source, destination, RFC</text>
+    <path d="M334 48h152" stroke="url(#line)" stroke-width="4"/>
+    <path d="M476 36l24 12-24 12z" fill="#93c5fd"/>
+    <rect x="520" y="0" width="315" height="96" rx="8" fill="#111827" stroke="#334155"/>
+    <text x="546" y="38" fill="#f8fafc">policy profiles</text>
+    <text x="546" y="68" fill="#94a3b8">data, edge, lab</text>
+    <path d="M854 48h152" stroke="url(#line)" stroke-width="4"/>
+    <path d="M996 36l24 12-24 12z" fill="#93c5fd"/>
+    <rect x="1040" y="0" width="315" height="96" rx="8" fill="#111827" stroke="#334155"/>
+    <text x="1066" y="38" fill="#f8fafc">release artifacts</text>
+    <text x="1066" y="68" fill="#94a3b8">JSONL, CSV, configs</text>
+  </g>
+  <g transform="translate(1230 88)" fill="none" stroke="#4fd1c5" stroke-width="2" opacity="0.65">
+    <circle cx="78" cy="78" r="66"/>
+    <circle cx="78" cy="78" r="38"/>
+    <path d="M12 78h132M78 12v132M31 31l94 94M125 31l-94 94"/>
+  </g>
+</svg>

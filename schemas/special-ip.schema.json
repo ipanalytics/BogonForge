@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bogonforge.local/schemas/special-ip.schema.json",
+  "type": "object",
+  "required": ["prefix", "family", "class", "name", "facts", "dataset_policy"],
+  "properties": {
+    "prefix": { "type": "string" },
+    "family": { "enum": ["ipv4", "ipv6"] },
+    "class": { "type": "string" },
+    "name": { "type": "string" },
+    "facts": {
+      "type": "object",
+      "required": ["source", "rfc", "globally_reachable", "forwardable", "source_valid", "destination_valid", "reserved_by_protocol", "stability"],
+      "properties": {
+        "source": { "type": "string" },
+        "rfc": { "type": "array", "items": { "type": "string" } },
+        "globally_reachable": { "type": ["boolean", "null"] },
+        "forwardable": { "type": ["boolean", "null"] },
+        "source_valid": { "type": ["boolean", "null"] },
+        "destination_valid": { "type": ["boolean", "null"] },
+        "reserved_by_protocol": { "type": ["boolean", "null"] },
+        "stability": { "enum": ["permanent", "terminated"] }
+      }
+    },
+    "dataset_policy": { "type": "array", "items": { "type": "string" } }
+  }
+}
