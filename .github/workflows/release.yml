@@ -85,6 +85,7 @@ jobs:
           echo "Previous release: $latest_tag"
 
           mkdir -p "$PREVIOUS_DIR"
+          mkdir -p /tmp/bogonforge-previous
 
           if gh release download "$latest_tag" \
             --pattern "bogonforge-release.tar.gz" \
@@ -102,6 +103,10 @@ jobs:
       - name: Build current datasets
         run: |
           ./bogonforge build --out "$RELEASE_DIR"
+
+      - name: Show generated release tree
+        run: |
+          find "$RELEASE_DIR" -maxdepth 3 -type f | sort
 
       - name: Validate current release
         run: |
@@ -127,6 +132,7 @@ jobs:
           set -e
 
           required_files=(
+            "$RELEASE_DIR/bogonforge.mmdb"
             "$RELEASE_DIR/bogonforge.jsonl.gz"
             "$RELEASE_DIR/bogonforge.csv.gz"
             "$RELEASE_DIR/bogonforge-asn.jsonl.gz"
@@ -166,7 +172,6 @@ jobs:
           tar -czf "$BUNDLE_DIR/bogonforge-profiles.tar.gz" -C "$RELEASE_DIR" profiles
           tar -czf "$BUNDLE_DIR/bogonforge-configs.tar.gz" -C "$RELEASE_DIR" configs
           tar -czf "$BUNDLE_DIR/bogonforge-schemas.tar.gz" -C "$RELEASE_DIR" schemas
-
           tar -czf "$BUNDLE_DIR/bogonforge-release.tar.gz" -C "$RELEASE_DIR" .
 
           sha256sum "$BUNDLE_DIR"/*.tar.gz > "$BUNDLE_DIR/bundle-checksums.txt"
@@ -175,7 +180,6 @@ jobs:
         run: |
           set -e
 
-          build_id="$(date -u +'%Y%m%d-%H%M%SZ')"
           short_sha="$(git rev-parse --short HEAD)"
 
           {
@@ -187,6 +191,7 @@ jobs:
             echo
             echo "## Included artifacts"
             echo
+            echo "- \`bogonforge.mmdb\` — MaxMind DB explain lookup"
             echo "- \`bogonforge.jsonl.gz\` — special-use IP records"
             echo "- \`bogonforge.csv.gz\` — special-use IP records as CSV"
             echo "- \`bogonforge-asn.jsonl.gz\` — special-purpose ASN records"
@@ -260,6 +265,7 @@ jobs:
           tag="${{ steps.tag.outputs.tag }}"
 
           assets=(
+            "$RELEASE_DIR/bogonforge.mmdb"
             "$RELEASE_DIR/bogonforge.jsonl.gz"
             "$RELEASE_DIR/bogonforge.csv.gz"
             "$RELEASE_DIR/bogonforge-asn.jsonl.gz"
