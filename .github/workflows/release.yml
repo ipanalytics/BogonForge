@@ -1,0 +1,285 @@
+name: Release BogonForge datasets
+
+on:
+  schedule:
+    # Weekly stable release: Monday 03:00 UTC
+    - cron: "0 3 * * 1"
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Optional release tag. Example: data-20260524-030000Z"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark release as prerelease"
+        required: false
+        default: false
+        type: boolean
+      validate_strict:
+        description: "Run validate in strict mode"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bogonforge-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish dataset release
+    runs-on: ubuntu-latest
+
+    env:
+      RELEASE_DIR: release/current
+      PREVIOUS_DIR: release/previous
+      BUNDLE_DIR: release/bundles
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Show build environment
+        run: |
+          go version
+          git rev-parse --short HEAD
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Build bogonforge CLI
+        run: |
+          go build -o ./bogonforge ./cmd/bogonforge
+          ./bogonforge --help || true
+
+      - name: Prepare release directories
+        run: |
+          rm -rf "$RELEASE_DIR" "$PREVIOUS_DIR" "$BUNDLE_DIR"
+          mkdir -p "$RELEASE_DIR" "$PREVIOUS_DIR" "$BUNDLE_DIR"
+
+      - name: Try downloading previous release bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+
+          latest_tag="$(gh release list --limit 1 --json tagName --jq '.[0].tagName' || true)"
+
+          if [ -z "$latest_tag" ] || [ "$latest_tag" = "null" ]; then
+            echo "No previous release found. Current build will be treated as baseline."
+            exit 0
+          fi
+
+          echo "Previous release: $latest_tag"
+
+          mkdir -p "$PREVIOUS_DIR"
+
+          if gh release download "$latest_tag" \
+            --pattern "bogonforge-release.tar.gz" \
+            --dir /tmp/bogonforge-previous; then
+
+            tar -xzf /tmp/bogonforge-previous/bogonforge-release.tar.gz \
+              -C "$PREVIOUS_DIR" \
+              --strip-components=1 || true
+
+            echo "Previous release extracted into $PREVIOUS_DIR"
+          else
+            echo "No previous full release bundle found. Continuing without previous release."
+          fi
+
+      - name: Build current datasets
+        run: |
+          ./bogonforge build --out "$RELEASE_DIR"
+
+      - name: Validate current release
+        run: |
+          if [ "${{ inputs.validate_strict }}" = "false" ]; then
+            ./bogonforge validate "$RELEASE_DIR"
+          else
+            ./bogonforge validate "$RELEASE_DIR" --strict
+          fi
+
+      - name: Generate diff against previous release if supported
+        run: |
+          if [ -d "$PREVIOUS_DIR" ] && [ "$(find "$PREVIOUS_DIR" -type f | wc -l)" -gt 0 ]; then
+            echo "Previous release exists; trying bogonforge diff."
+            ./bogonforge diff "$PREVIOUS_DIR" "$RELEASE_DIR" > "$RELEASE_DIR/impact-diff.json" || {
+              echo "bogonforge diff failed or is not supported. Keeping generated impact-diff.json if present."
+            }
+          else
+            echo "No previous release available; using generated baseline impact-diff.json."
+          fi
+
+      - name: Verify required artifacts
+        run: |
+          set -e
+
+          required_files=(
+            "$RELEASE_DIR/bogonforge.jsonl.gz"
+            "$RELEASE_DIR/bogonforge.csv.gz"
+            "$RELEASE_DIR/bogonforge-asn.jsonl.gz"
+            "$RELEASE_DIR/bogonforge-asn.csv.gz"
+            "$RELEASE_DIR/metadata.json"
+            "$RELEASE_DIR/impact-diff.json"
+            "$RELEASE_DIR/quality-report.md"
+            "$RELEASE_DIR/checksums.txt"
+          )
+
+          required_dirs=(
+            "$RELEASE_DIR/profiles"
+            "$RELEASE_DIR/configs"
+            "$RELEASE_DIR/schemas"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [ ! -s "$file" ]; then
+              echo "Missing or empty required artifact: $file"
+              exit 1
+            fi
+          done
+
+          for dir in "${required_dirs[@]}"; do
+            if [ ! -d "$dir" ]; then
+              echo "Missing required directory: $dir"
+              exit 1
+            fi
+          done
+
+          echo "Required artifacts verified."
+
+      - name: Package profile/config/schema bundles
+        run: |
+          set -e
+
+          tar -czf "$BUNDLE_DIR/bogonforge-profiles.tar.gz" -C "$RELEASE_DIR" profiles
+          tar -czf "$BUNDLE_DIR/bogonforge-configs.tar.gz" -C "$RELEASE_DIR" configs
+          tar -czf "$BUNDLE_DIR/bogonforge-schemas.tar.gz" -C "$RELEASE_DIR" schemas
+
+          tar -czf "$BUNDLE_DIR/bogonforge-release.tar.gz" -C "$RELEASE_DIR" .
+
+          sha256sum "$BUNDLE_DIR"/*.tar.gz > "$BUNDLE_DIR/bundle-checksums.txt"
+
+      - name: Create release notes
+        run: |
+          set -e
+
+          build_id="$(date -u +'%Y%m%d-%H%M%SZ')"
+          short_sha="$(git rev-parse --short HEAD)"
+
+          {
+            echo "# BogonForge dataset release"
+            echo
+            echo "- Build time: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "- Git commit: \`$short_sha\`"
+            echo "- Source: IANA/RFC special-use IP and ASN registries"
+            echo
+            echo "## Included artifacts"
+            echo
+            echo "- \`bogonforge.jsonl.gz\` — special-use IP records"
+            echo "- \`bogonforge.csv.gz\` — special-use IP records as CSV"
+            echo "- \`bogonforge-asn.jsonl.gz\` — special-purpose ASN records"
+            echo "- \`bogonforge-asn.csv.gz\` — special-purpose ASN records as CSV"
+            echo "- \`bogonforge-profiles.tar.gz\` — data-policy, edge-drop, lab-allow, geoip-exclude profiles"
+            echo "- \`bogonforge-configs.tar.gz\` — generated nftables/ipset/nginx configs"
+            echo "- \`bogonforge-schemas.tar.gz\` — JSON schemas"
+            echo "- \`metadata.json\` — build metadata and source provenance"
+            echo "- \`impact-diff.json\` — policy-impact diff"
+            echo "- \`quality-report.md\` — quality summary"
+            echo "- \`checksums.txt\` — artifact checksums"
+            echo "- \`bogonforge-release.tar.gz\` — complete release directory"
+            echo
+            echo "## Quality report"
+            echo
+            if [ -s "$RELEASE_DIR/quality-report.md" ]; then
+              cat "$RELEASE_DIR/quality-report.md"
+            else
+              echo "_No quality report found._"
+            fi
+          } > release-notes.md
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="data-$(date -u +'%Y%m%d-%H%M%SZ')"
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $tag"
+
+      - name: Create git tag
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists locally."
+          else
+            git tag "$tag"
+          fi
+
+          git push origin "$tag" || echo "Tag may already exist remotely."
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+
+          prerelease_flag=""
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists. Updating assets."
+          else
+            gh release create "$tag" \
+              --title "BogonForge datasets $tag" \
+              --notes-file release-notes.md \
+              $prerelease_flag
+          fi
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+
+          assets=(
+            "$RELEASE_DIR/bogonforge.jsonl.gz"
+            "$RELEASE_DIR/bogonforge.csv.gz"
+            "$RELEASE_DIR/bogonforge-asn.jsonl.gz"
+            "$RELEASE_DIR/bogonforge-asn.csv.gz"
+            "$RELEASE_DIR/metadata.json"
+            "$RELEASE_DIR/impact-diff.json"
+            "$RELEASE_DIR/quality-report.md"
+            "$RELEASE_DIR/checksums.txt"
+            "$BUNDLE_DIR/bogonforge-profiles.tar.gz"
+            "$BUNDLE_DIR/bogonforge-configs.tar.gz"
+            "$BUNDLE_DIR/bogonforge-schemas.tar.gz"
+            "$BUNDLE_DIR/bogonforge-release.tar.gz"
+            "$BUNDLE_DIR/bundle-checksums.txt"
+          )
+
+          for asset in "${assets[@]}"; do
+            if [ -s "$asset" ]; then
+              echo "Uploading $asset"
+              gh release upload "$tag" "$asset" --clobber
+            else
+              echo "Skipping missing/empty asset: $asset"
+            fi
+          done
