@@ -132,7 +132,6 @@ jobs:
           set -e
 
           required_files=(
-            "$RELEASE_DIR/bogonforge.mmdb"
             "$RELEASE_DIR/bogonforge.jsonl.gz"
             "$RELEASE_DIR/bogonforge.csv.gz"
             "$RELEASE_DIR/bogonforge-asn.jsonl.gz"
@@ -191,7 +190,6 @@ jobs:
             echo
             echo "## Included artifacts"
             echo
-            echo "- \`bogonforge.mmdb\` — MaxMind DB explain lookup"
             echo "- \`bogonforge.jsonl.gz\` — special-use IP records"
             echo "- \`bogonforge.csv.gz\` — special-use IP records as CSV"
             echo "- \`bogonforge-asn.jsonl.gz\` — special-purpose ASN records"
@@ -265,7 +263,6 @@ jobs:
           tag="${{ steps.tag.outputs.tag }}"
 
           assets=(
-            "$RELEASE_DIR/bogonforge.mmdb"
             "$RELEASE_DIR/bogonforge.jsonl.gz"
             "$RELEASE_DIR/bogonforge.csv.gz"
             "$RELEASE_DIR/bogonforge-asn.jsonl.gz"
