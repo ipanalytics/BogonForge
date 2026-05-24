@@ -76,7 +76,7 @@ Facts and policy are intentionally separate. Facts come from IANA/RFC sources. P
 ## Quick Start
 
 ```bash
-git clone https://github.com/alx/bogonforge.git
+git clone https://github.com/ipanalytics/bogonforge.git
 cd bogonforge
 
 go test ./...
@@ -99,7 +99,7 @@ Policy: exclude_from_geoip, exclude_from_reputation, exclude_from_provider_map
 BogonForge is a Go CLI.
 
 ```bash
-go install github.com/alx/bogonforge/cmd/bogonforge@latest
+go install https://github.com/ipanalytics/BogonForge/cmd/bogonforge@latest
 ```
 
 For local development:
