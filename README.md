@@ -9,7 +9,7 @@ BogonForge tells your pipeline what an address is allowed to mean.
 It prevents documentation, private, loopback, link-local, reserved, and special-use address space from being incorrectly geolocated, scored as reputation data, mapped to providers, or treated as external infrastructure.
 
 <p align="center">
-  <img src="./site/banner.svg" alt="BogonForge banner" width="100%">
+  <img src="./site/banner.png" alt="BogonForge banner" width="100%">
 </p>
 
 <p align="center">
